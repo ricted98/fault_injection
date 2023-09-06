@@ -2,7 +2,8 @@
 # Solderpad Hardware License, Version 0.51, see LICENSE for details.
 # SPDX-License-Identifier: SHL-0.51
 #
-# Author: Michael Rogenmoser (michaero@iis.ee.ethz.ch)
+# Authors: Michael Rogenmoser (michaero@iis.ee.ethz.ch)
+#          Riccardo Tedeschi  (riccardo.tedeschi4@studio.unibo.it)
 
 transcript quietly
 

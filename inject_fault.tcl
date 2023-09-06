@@ -2,8 +2,9 @@
 # Solderpad Hardware License, Version 0.51, see LICENSE for details.
 # SPDX-License-Identifier: SHL-0.51
 #
-# Author: Luca Rufer (lrufer@student.ethz.ch)
-
+# Authors: Luca Rufer        (lrufer@student.ethz.ch)
+#          Riccardo Tedeschi (riccardo.tedeschi4@studio.unibo.it)
+#
 # ============ List of variables that may be passed to this script ============
 # Any of these variables may not be changed while the fault injection script
 # is running, unless noted otherwise. Changing any of the settings during
