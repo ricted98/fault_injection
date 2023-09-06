@@ -445,6 +445,8 @@ if {$rand_initial_injection_phase} {
   set prescaler [expr $fault_period - 1]
 }
 
+set fault_injected 0
+
 # periodically inject faults
 when -label inject_fault "\$now >= $inject_start_time and $injection_clock == $injection_clock_trigger" {
   incr prescaler
@@ -513,6 +515,8 @@ when -label inject_fault "\$now >= $inject_start_time and $injection_clock == $i
     if {$success} {
       incr stat_num_bitflips
 
+      set fault_injected 1
+
       set flip_propagated 0
       # record the output after the flip
       set post_flip_out_val [list]
@@ -568,6 +572,50 @@ when -label inject_fault "\$now >= $inject_start_time and $injection_clock == $i
       if {$log_injections} {
         puts $injection_log "$now,$net_to_flip,[lindex $flip_return 1],[lindex $flip_return 2],$output_changed,$new_state_changed"
         flush $injection_log
+      }
+    }
+  }
+}
+
+set wait_counter 0
+set mismatch_detected 0
+set state_corrupted 0
+
+when -label check_undetected_corruption "\$now >= $inject_start_time and $injection_clock == $injection_clock_trigger" {
+  if {$fault_injected} {
+    incr wait_counter
+    set lockstep_err [examine -binary -noshowbase -time $now \
+      sim:/tb_pulp/i_dut/soc_domain_i/pulp_soc_i/fc_subsystem_i/FC_CORE/lFC_CORE/u_ibex_top/u_ibex_core/lockstep_err]
+    set mismatch_detected [expr {$mismatch_detected || $lockstep_err}]
+    if {$wait_counter >= 30} {
+      set my_expr [list]
+      set current_value_list [list]
+        foreach s $core_signals {
+          set current_value [examine -unsigned -noshowbase -time $now "sim:$s"]
+          lappend current_value_list $current_value
+          lappend my_expr "golden:$s == $current_value"
+        }
+      set my_expr [join $my_expr " && "]
+      if {!$mismatch_detected} {
+        set golden_time [lindex [searchlog -reverse -expr $my_expr $now] 0 0]
+        for {set i 0} {$i < [llength $core_signals]} {incr i} {
+          set golden_value [examine -unsigned -noshowbase -time $golden_time "golden:[lindex $core_signals $i]"]
+          if {[lindex $current_value_list $i] != $golden_value} {
+            echo "[lindex $core_signals $i]"
+            echo "[lindex $current_value_list $i] vs $golden_value"
+            set state_corrupted 1
+            break
+          }
+        }
+        if {$state_corrupted} {
+          echo "State corrupted but no recovery was issued"
+        }
+      }
+      set fault_injected 0
+      set mismatch_detected 0
+      set wait_counter 0
+      if {$stat_num_bitflips >= $max_num_fault_inject} {
+        nowhen *
       }
     }
   }
