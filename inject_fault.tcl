@@ -580,7 +580,6 @@ when -label inject_fault "\$now >= $inject_start_time and $injection_clock == $i
 
 set wait_counter 0
 set mismatch_detected 0
-set state_corrupted 0
 
 when -label check_undetected_corruption "\$now >= $inject_start_time and $injection_clock == $injection_clock_trigger" {
   if {$fault_injected} {
@@ -598,24 +597,28 @@ when -label check_undetected_corruption "\$now >= $inject_start_time and $inject
         }
       set my_expr [join $my_expr " && "]
       if {!$mismatch_detected} {
-        set golden_time [lindex [searchlog -reverse -expr $my_expr $now] 0 0]
-        for {set i 0} {$i < [llength $core_signals]} {incr i} {
-          set golden_value [examine -unsigned -noshowbase -time $golden_time "golden:[lindex $core_signals $i]"]
-          if {[lindex $current_value_list $i] != $golden_value} {
-            echo "[lindex $core_signals $i]"
-            echo "[lindex $current_value_list $i] vs $golden_value"
-            set state_corrupted 1
-            break
+        set golden_time [lindex [searchlog -reverse -endtime [expr $now - $stat_num_bitflips * 3e5] -expr $my_expr $now] 0 0]
+        if {[string match $golden_time ""]} {
+          echo "Warning: Unable to find a matching state in golden waveforms"
+          nowhen *
+          stop
+        } else {
+          for {set i 0} {$i < [llength $core_signals]} {incr i} {
+            set golden_value [examine -unsigned -noshowbase -time $golden_time "golden:[lindex $core_signals $i]"]
+            if {[lindex $current_value_list $i] != $golden_value} {
+              # echo "[lindex $core_signals $i]"
+              # echo "[lindex $current_value_list $i] vs $golden_value"
+              echo "Warning: State corrupted but no recovery was issued"
+              nowhen *
+              break
+            }
           }
-        }
-        if {$state_corrupted} {
-          echo "State corrupted but no recovery was issued"
         }
       }
       set fault_injected 0
       set mismatch_detected 0
       set wait_counter 0
-      if {$stat_num_bitflips >= $max_num_fault_inject} {
+      if {$max_num_fault_inject != 0 && $stat_num_bitflips >= $max_num_fault_inject} {
         nowhen *
       }
     }
