@@ -354,9 +354,9 @@ proc flipbit {signal_name is_register} {
   set old_value [examine -radixenumsymbolic $signal_name]
   # check if net is an enum
   if {[examine -radixenumnumeric $signal_name] != [examine -radixenumsymbolic $signal_name]} {
-    set examine_string [examine -radix binary,enumnumeric $signal_name]
-    regexp {(\d*)'w(\d*)} $examine_string -> length old_value_numeric
-    if {length != 1} {
+    set examine_string [examine -unsigned -radixenumnumeric $signal_name]
+    regexp {(\d*)'\w(\d*)} $examine_string -> length old_value_numeric
+    if {$length != 1} {
       set new_value_numeric [expr int(rand()*([expr 2 ** $length]))]
       while {$old_value_numeric == $new_value_numeric} {
         set new_value_numeric [expr int(rand()*([expr 2 ** $length]))]
