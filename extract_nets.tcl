@@ -64,9 +64,28 @@ proc get_net_reg_width {signal_name} {
 
 proc get_record_field_names {signal_name} {
   set sig_description [examine -describe $signal_name]
-  set matches [regexp -all -inline "Element #\\d* \"\[a-zA-Z_\]\[a-zA-Z0-9_\]*\"" $sig_description]
-  set field_names {}
-  foreach match $matches { lappend field_names [lindex [split $match \"] 1] }
+  # Regexp patterns
+  set element_pattern {Element\s*#(\d+)\s*"(\w+)"}
+  set record_pattern {Record\s\[(\d+?)\selements\]}
+  # Skipped elements counter
+  set skip_count 0
+  # Final field names list
+  set field_names [list]
+  # Skip the first line, since it is the desired record
+  foreach line [lrange [split $sig_description \n] 1 end] {
+    if {[regexp $record_pattern $line -> record_length]} {
+      # Update the value with the latest one
+      incr skip_count $record_length
+    } elseif {[regexp $element_pattern $line -> idx name]} {
+      if {$skip_count == 0} {
+        # No skipping, this is a field of the current record
+        lappend field_names $name
+      } else {
+        # A nested recored has been found, skip its fields
+        incr skip_count -1
+      }
+    }
+  }
   return $field_names
 }
 
