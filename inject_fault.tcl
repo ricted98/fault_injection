@@ -152,9 +152,6 @@ if {![info exists output_netlist]}          { set output_netlist          [list]
 if {![info exists next_state_netlist]}      { set next_state_netlist      [list] }
 if {![info exists assertion_disable_list]}  { set assertion_disable_list  [list] }
 
-# Source generic netlist extraction procs
-source tcl_files/fault_injection/extract_nets.tcl
-
 ########################################
 #  Finish setup depending on settings  #
 ########################################
