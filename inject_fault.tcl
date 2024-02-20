@@ -570,6 +570,10 @@ when -label inject_fault "\$now >= $inject_start_time and $injection_clock == $i
         flush $injection_log
       }
     }
+  } elseif {($stat_num_bitflips == $max_num_fault_inject)} {
+    set inject_stop_time $now
+    nowhen inject_fault
+    nowhen inject_start
   }
 }
 
@@ -593,6 +597,7 @@ when -label inject_stop "\$now >= $inject_stop_time" {
     if {$log_injections} {
       close $injection_log
     }
+    nowhen inject_stop
   }
 }
 
